@@ -1,0 +1,51 @@
+:root {
+  --bg: #0f0f17;
+  --text: #e0e0ff;
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.navbar {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem 2rem;
+  background: #1a1a2e;
+  border-bottom: 1px solid #333;
+}
+
+.navbar a {
+  color: #aaa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.navbar a.active,
+.navbar a:hover {
+  color: white;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+button {
+  padding: 0.7rem 1.4rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-dark);
+}
