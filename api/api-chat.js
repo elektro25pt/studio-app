@@ -15,10 +15,10 @@ export default async function handler(req, res) {
   // 2. Segurança: só aceita pedidos do teu próprio domínio
   const origin = req.headers.origin || '';
   const allowed = [
-    'https://elektro25.vercel.app',   // ← substitui pelo teu domínio Vercel
-    'https://elektro25.com',            // ← substitui pelo teu domínio próprio (se tiveres)
-    'http://localhost:3000',           // ← para testes locais
-    'http://127.0.0.1:5500',          // ← para testes com Live Server
+    'testnet.elektro25.com',   // ← replace with the Vercel domain
+    'https://elektro25.com',            // ← replace wit your own domain (if you have one)
+    'http://localhost:3000',           // ← for local testings
+    'http://127.0.0.1:5500',          // ← for tests with Live Server
   ];
   if (origin && !allowed.some(a => origin.startsWith(a))) {
     return res.status(403).json({ error: 'Forbidden' });
