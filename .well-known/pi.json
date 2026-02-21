@@ -2,13 +2,3 @@
   "version": "2.0",
   "username": "djmlj"
 }
-```
-Substitui `djmlj` pelo teu username Pi real (sem o @)
-
-**Passo 5** — Clica **"Commit changes"** → **"Commit directly to main"**
-
----
-
-O Vercel faz deploy automático em segundos. Depois confirma que está acessível abrindo no browser:
-```
-https://www.elektro25.com/.well-known/pi.json
