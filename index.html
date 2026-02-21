@@ -10,6 +10,20 @@
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
   <meta name="robots" content="noarchive, nosnippet">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+  <!-- Pi Network SDK -->
+  <script>
+    window.IS_PI_BROWSER = /PiBrowser/i.test(navigator.userAgent);
+    if (window.IS_PI_BROWSER) {
+      var piSdk = document.createElement('script');
+      piSdk.src = 'https://sdk.minepi.com/pi-sdk.js';
+      piSdk.onload = function() {
+        Pi.init({ version: "2.0", sandbox: true }); // sandbox: true para testes — muda para false em produção
+        window.PI_SDK_READY = true;
+        document.dispatchEvent(new Event('pi-sdk-ready'));
+      };
+      document.head.appendChild(piSdk);
+    }
+  </script>
   <style>
     :root {
       --black: #0a0a0a; --deep: #0f0f0f; --card: #141414; --border: #222;
@@ -148,6 +162,31 @@
     /* CONTACT */
     #contact { max-width: 900px; margin: 0 auto; }
     #contact > p { font-size: 1rem; line-height: 1.9; opacity: 0.75; margin-bottom: 40px; }
+
+    /* PI PAYMENT */
+    .booking-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+    .booking-divider { display: flex; align-items: center; gap: 12px; width: 100%; margin: 20px 0 14px; }
+    .booking-divider::before, .booking-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .booking-divider span { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--grey); white-space: nowrap; }
+    .btn-pi-pay { display: inline-flex; align-items: center; gap: 10px; padding: 14px 36px; border: 1px solid var(--gold); background: rgba(200,169,81,0.06); color: var(--gold); font-family: 'Barlow', sans-serif; font-size: 0.75rem; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
+    .btn-pi-pay::before { content: ''; position: absolute; inset: 0; background: var(--gold); transform: translateX(-100%); transition: transform 0.3s; z-index: 0; }
+    .btn-pi-pay:hover::before { transform: translateX(0); }
+    .btn-pi-pay:hover { color: var(--black); }
+    .btn-pi-pay svg, .btn-pi-pay span { position: relative; z-index: 1; }
+    .btn-pi-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pi-pay-env-hint { font-size: 0.68rem; letter-spacing: 1.5px; color: var(--grey); margin-top: 10px; opacity: 0.7; }
+    .pi-pay-env-hint.pi-env-native { color: var(--gold); opacity: 0.85; }
+    .pi-info-row { display: flex; align-items: center; margin-bottom: 8px; border: 1px solid var(--border); overflow: hidden; }
+    .pi-info-label { background: rgba(200,169,81,0.08); border-right: 1px solid var(--border); padding: 12px 16px; font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); min-width: 72px; text-align: center; }
+    .pi-info-value { padding: 12px 16px; font-size: 1rem; color: var(--white); flex: 1; text-align: left; cursor: pointer; }
+    .pi-copy-hint { font-size: 0.65rem; opacity: 0.5; margin-left: 6px; }
+    .pi-deeplink-btns { display: flex; gap: 10px; justify-content: center; margin: 20px 0 12px; flex-wrap: wrap; }
+    .btn-pi-deeplink { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border: 1px solid var(--gold); color: var(--gold); text-decoration: none; font-family: 'Barlow', sans-serif; font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase; transition: all 0.3s; background: rgba(200,169,81,0.05); }
+    .btn-pi-deeplink:hover { background: var(--gold); color: var(--black); }
+    .pi-modal-note { font-size: 0.75rem; opacity: 0.55; line-height: 1.6; margin-top: 4px; padding: 0 4px; }
+    .pi-modal-spinner { width: 44px; height: 44px; border: 2px solid rgba(200,169,81,0.2); border-top-color: var(--gold); border-radius: 50%; animation: pi-spin 0.8s linear infinite; margin: 0 auto; }
+    @keyframes pi-spin { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) { .booking-actions { align-items: stretch; } .btn-pi-pay { justify-content: center; } }
 
     /* TERMS */
     #terms { max-width: 900px; margin: 0 auto; }
@@ -417,9 +456,71 @@
     <!-- Bot traps (invisible to real users) -->
     <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;" placeholder="Leave empty">
     <input type="hidden" name="_form_time" id="booking-form-time">
-    <button type="submit" class="btn-primary" data-label="Submit Booking Request" data-i18n="booking.form.submit" style="width:fit-content; cursor:pointer; font-family:inherit">Submit Booking Request</button>
+
+    <div class="booking-actions">
+      <button type="submit" class="btn-primary" data-label="Submit Booking Request" data-i18n="booking.form.submit" style="cursor:pointer; font-family:inherit">Submit Booking Request</button>
+      <div class="booking-divider"><span>or pay directly with</span></div>
+      <button type="button" class="btn-pi-pay" onclick="initPiPayment()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9 12h6M12 9v6"/></svg>
+        <span>Pay with π Pi</span>
+      </button>
+      <div class="pi-pay-env-hint" id="pi-env-hint"></div>
+    </div>
   </form>
 </section>
+
+<!-- PI PAYMENT MODAL -->
+<div class="modal-overlay" id="pi-payment-modal">
+  <div class="modal-box" style="max-width:480px; text-align:center;">
+    <button class="modal-close" onclick="closePiModal()">×</button>
+    <!-- loading -->
+    <div id="pi-state-loading" style="display:none; padding:24px 0;">
+      <div class="pi-modal-spinner"></div>
+      <p style="margin-top:20px; opacity:0.7; font-size:0.9rem; letter-spacing:1px;">Connecting to Pi Network…</p>
+    </div>
+    <!-- success -->
+    <div id="pi-state-success" style="display:none;">
+      <div style="font-size:3rem; margin-bottom:16px;">✅</div>
+      <h3 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:3px; margin-bottom:16px;">Payment Confirmed</h3>
+      <p style="opacity:0.8; font-size:0.95rem; line-height:1.8;" id="pi-success-detail">Your π Pi payment is confirmed.</p>
+      <p style="opacity:0.6; font-size:0.8rem; margin-top:12px;">We'll confirm your booking within 24 hours.</p>
+      <br>
+      <button class="btn-primary" onclick="closePiModal()" style="cursor:pointer; font-family:inherit; font-size:0.75rem;">Done</button>
+    </div>
+    <!-- external browser -->
+    <div id="pi-state-external" style="display:none;">
+      <div style="font-size:2.8rem; margin-bottom:8px;">π</div>
+      <h3 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:1.9rem; letter-spacing:3px; margin-bottom:8px;">Pay with Pi</h3>
+      <p style="opacity:0.7; font-size:0.85rem; line-height:1.7; margin-bottom:20px;">Open Pi Browser or the Pi app and send the exact amount below.</p>
+      <div class="pi-info-row">
+        <div class="pi-info-label">To</div>
+        <div class="pi-info-value" onclick="piCopyField(this)">djmlj <span class="pi-copy-hint">📋 tap to copy</span></div>
+      </div>
+      <div class="pi-info-row">
+        <div class="pi-info-label">Amount</div>
+        <div class="pi-info-value" id="pi-pay-amount-display">— π</div>
+      </div>
+      <div class="pi-info-row">
+        <div class="pi-info-label">Memo</div>
+        <div class="pi-info-value" id="pi-pay-memo-display" style="font-size:0.85rem; opacity:0.8;">—</div>
+      </div>
+      <div class="pi-deeplink-btns">
+        <a id="pi-deeplink-btn" href="#" class="btn-pi-deeplink" target="_blank" rel="noopener">
+          Open in Pi Browser ↗
+        </a>
+      </div>
+      <p class="pi-modal-note">After sending, reply to our confirmation email with your transaction ID.</p>
+    </div>
+    <!-- error -->
+    <div id="pi-state-error" style="display:none;">
+      <div style="font-size:2.5rem; margin-bottom:12px;">⚠️</div>
+      <h3 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:3px; margin-bottom:12px;">Payment Cancelled</h3>
+      <p style="opacity:0.75; font-size:0.9rem; line-height:1.7;" id="pi-error-msg">The payment was cancelled or encountered an error.</p>
+      <br>
+      <button class="btn-primary" onclick="closePiModal()" style="cursor:pointer; font-family:inherit; font-size:0.75rem;">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- CONTACT -->
 <section id="contact">
@@ -1209,6 +1310,153 @@ async function submitForm(e, type) {
 
 document.getElementById('success-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));closeMobileNav();closeLangDropdown();}});
+
+// ═══════════════════════════════════════════
+//  PI NETWORK PAYMENTS
+//  Cenário 1: Pi Browser (SDK nativo)
+//  Cenário 2: Outros browsers (deep link)
+// ═══════════════════════════════════════════
+(function() {
+
+  // ── CONFIG ─────────────────────────────────────────────
+  var PI_USERNAME = 'djmlj'; // o teu username Pi
+  var SERVICE_PRICES = {
+    'Mixing':                    80,
+    'Mastering':                 60,
+    'Production':               150,
+    'Rush Service':             120,
+    'Full Production Package':  220,
+    'default':                   80
+  };
+  // ────────────────────────────────────────────────────────
+
+  function getPrice(service) {
+    return SERVICE_PRICES[service] || SERVICE_PRICES['default'];
+  }
+
+  function getMemo(service) {
+    return service ? 'Elektro25 \u2013 ' + service : 'Elektro25 Booking';
+  }
+
+  // Hint de ambiente ao carregar a página
+  document.addEventListener('DOMContentLoaded', function() {
+    var hint = document.getElementById('pi-env-hint');
+    if (!hint) return;
+    if (window.IS_PI_BROWSER) {
+      hint.textContent = '\u2726 Pi Browser detected \u2014 native payment enabled';
+      hint.classList.add('pi-env-native');
+    } else {
+      hint.textContent = 'Not in Pi Browser \u2014 will open Pi app to complete payment';
+    }
+  });
+
+  // Botão Pay with π Pi
+  window.initPiPayment = function() {
+    var service = (document.getElementById('booking-service') || {}).value;
+    if (!service) {
+      alert('Please select a service before paying with Pi.');
+      return;
+    }
+    var amount = getPrice(service);
+    var memo   = getMemo(service);
+
+    if (window.IS_PI_BROWSER && window.PI_SDK_READY) {
+      runNativePayment(amount, memo, service);
+    } else if (window.IS_PI_BROWSER && !window.PI_SDK_READY) {
+      showState('loading'); openModal();
+      document.addEventListener('pi-sdk-ready', function once() {
+        document.removeEventListener('pi-sdk-ready', once);
+        runNativePayment(amount, memo, service);
+      });
+    } else {
+      showExternalModal(amount, memo);
+    }
+  };
+
+  // CENÁRIO 1 — Pi Browser SDK nativo
+  function runNativePayment(amount, memo, service) {
+    showState('loading'); openModal();
+    Pi.authenticate(['payments'], function onIncomplete(payment) {
+      // pagamento incompleto de sessão anterior — completa-o
+      fetch('/.netlify/functions/pi-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction && payment.transaction.txid })
+      }).catch(function(){});
+    }).then(function() {
+      return Pi.createPayment({
+        amount: amount,
+        memo: memo,
+        metadata: { service: service }
+      }, {
+        onReadyForServerApproval: function(paymentId) {
+          fetch('/.netlify/functions/pi-approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentId: paymentId, service: service, amount: amount })
+          }).catch(function(){});
+        },
+        onReadyForServerCompletion: function(paymentId, txid) {
+          fetch('/.netlify/functions/pi-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentId: paymentId, txid: txid, service: service })
+          }).catch(function(){});
+          document.getElementById('pi-success-detail').textContent =
+            '\u03C0 ' + amount + ' Pi received \u2014 ' + service + ' booking confirmed.';
+          showState('success');
+        },
+        onCancel: function() {
+          document.getElementById('pi-error-msg').textContent = 'Payment cancelled. You were not charged.';
+          showState('error');
+        },
+        onError: function(error) {
+          document.getElementById('pi-error-msg').textContent =
+            'Error: ' + (error && error.message ? error.message : 'Unknown error');
+          showState('error');
+        }
+      });
+    }).catch(function() {
+      document.getElementById('pi-error-msg').textContent = 'Authentication failed. Please use Pi Browser.';
+      showState('error');
+    });
+  }
+
+  // CENÁRIO 2 — Outros browsers (deep link)
+  function showExternalModal(amount, memo) {
+    document.getElementById('pi-pay-amount-display').textContent = '\u03C0 ' + amount + ' Pi';
+    document.getElementById('pi-pay-memo-display').textContent = memo;
+    var deepLink = 'pi://payment?to=' + encodeURIComponent(PI_USERNAME) +
+                   '&amount=' + amount + '&memo=' + encodeURIComponent(memo);
+    document.getElementById('pi-deeplink-btn').href = deepLink;
+    showState('external'); openModal();
+  }
+
+  // Copy helper
+  window.piCopyField = function(el) {
+    var text = el.firstChild ? el.firstChild.textContent.trim() : el.textContent.trim();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        var hint = el.querySelector('.pi-copy-hint');
+        if (hint) { hint.textContent = '\u2713 Copied!'; setTimeout(function(){ hint.textContent = '\uD83D\uDCCB tap to copy'; }, 2000); }
+      });
+    }
+  };
+
+  // Modal helpers
+  function openModal() { document.getElementById('pi-payment-modal').classList.add('open'); }
+  window.closePiModal = function() { document.getElementById('pi-payment-modal').classList.remove('open'); };
+  document.addEventListener('DOMContentLoaded', function() {
+    var m = document.getElementById('pi-payment-modal');
+    if (m) m.addEventListener('click', function(e){ if(e.target===this) window.closePiModal(); });
+  });
+  function showState(s) {
+    ['loading','success','external','error'].forEach(function(x){
+      document.getElementById('pi-state-'+x).style.display = (x===s) ? 'block' : 'none';
+    });
+  }
+
+})();
 
 // ═══════════════════════════════════════════
 //  CONTENT PROTECTION
