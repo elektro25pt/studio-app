@@ -11,7 +11,7 @@
       }
     },
     {
-      "src": "/(?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js|pdf)$).*",
+      "src": "/(?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js|pdf|mp4|webm|ogg)$).*",
       "dest": "/index.html"
     }
   ]
