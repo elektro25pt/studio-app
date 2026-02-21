@@ -176,6 +176,19 @@
     .btn-pi-pay:disabled { opacity: 0.5; cursor: not-allowed; }
     .pi-pay-env-hint { font-size: 0.68rem; letter-spacing: 1.5px; color: var(--grey); margin-top: 10px; opacity: 0.7; }
     .pi-pay-env-hint.pi-env-native { color: var(--gold); opacity: 0.85; }
+
+    /* SERVICE PRICE DISPLAY */
+    .service-price-box {
+      display: none; margin-top: 10px;
+      padding: 14px 18px; border: 1px solid rgba(200,169,81,0.3);
+      background: rgba(200,169,81,0.04);
+    }
+    .service-price-box.visible { display: block; }
+    .spb-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .spb-pi { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; color: var(--gold); }
+    .spb-fiat { font-size: 0.9rem; opacity: 0.75; letter-spacing: 1px; }
+    .spb-fiat span { color: var(--white); font-weight: 600; }
+    .spb-note { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--grey); margin-top: 6px; opacity: 0.7; }
     .pi-info-row { display: flex; align-items: center; margin-bottom: 8px; border: 1px solid var(--border); overflow: hidden; }
     .pi-info-label { background: rgba(200,169,81,0.08); border-right: 1px solid var(--border); padding: 12px 16px; font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); min-width: 72px; text-align: center; }
     .pi-info-value { padding: 12px 16px; font-size: 1rem; color: var(--white); flex: 1; text-align: left; cursor: pointer; }
@@ -430,7 +443,7 @@
     <div class="form-row">
       <div class="form-group">
         <label data-i18n="booking.form.service">Service *</label>
-        <select name="service" id="booking-service" required>
+        <select name="service" id="booking-service" required onchange="updateServicePrice()">
           <option value="" data-i18n="booking.form.service.ph">Select a service…</option>
           <option value="Mixing" data-i18n="services.tab.mix">Mixing</option>
           <option value="Mastering" data-i18n="services.tab.mastering">Mastering</option>
@@ -438,6 +451,14 @@
           <option value="Rush Service" data-i18n="services.tab.rush">Rush Service</option>
           <option value="Full Production Package" data-i18n="booking.form.fullpkg">Full Production Package</option>
         </select>
+        <!-- PRICE DISPLAY -->
+        <div class="service-price-box" id="service-price-box">
+          <div class="spb-row">
+            <div class="spb-pi" id="spb-pi">— π</div>
+            <div class="spb-fiat" id="spb-fiat">— </div>
+          </div>
+          <div class="spb-note" id="spb-note">Live rate via CoinGecko · updating…</div>
+        </div>
       </div>
       <div class="form-group">
         <label data-i18n="booking.form.date">Preferred Date</label>
@@ -1320,18 +1341,113 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelec
 
   // ── CONFIG ─────────────────────────────────────────────
   var PI_USERNAME = 'djmlj'; // o teu username Pi
-  var SERVICE_PRICES = {
-    'Mixing':                    80,
-    'Mastering':                 60,
-    'Production':               150,
-    'Rush Service':             120,
-    'Full Production Package':  220,
-    'default':                   80
+
+  // ── PREÇOS FIXOS EM USD ─────────────────────────────────
+  var SERVICE_PRICES_USD = {
+    'Mixing':                   150,
+    'Mastering':                 50,
+    'Production':               500,
+    'Rush Service':              75,
+    'Full Production Package':  650,
+    'default':                  150
   };
   // ────────────────────────────────────────────────────────
 
+  // ── GEOLOCATION + CURRENCY ──────────────────────────────
+  var userCurrency = 'USD';
+  var userCurrencySymbol = '$';
+
+  fetch('https://ipapi.co/json/')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var c = data.currency || 'USD';
+      var country = data.country_code || '';
+      var cnyCountries = ['CN','HK','MO','TW','SG','MY','ID','TH','VN','PH','KR','JP','MM','KH','LA','MN'];
+      if (c === 'EUR') {
+        userCurrency = 'EUR'; userCurrencySymbol = '€';
+      } else if (country === 'NG' || c === 'NGN') {
+        userCurrency = 'NGN'; userCurrencySymbol = '₦';
+      } else if (country === 'IN' || c === 'INR') {
+        userCurrency = 'INR'; userCurrencySymbol = '₹';
+      } else if (c === 'CNY' || c === 'RMB' || cnyCountries.indexOf(country) !== -1) {
+        userCurrency = 'CNY'; userCurrencySymbol = '¥';
+      } else if (c === 'GBP') {
+        userCurrency = 'EUR'; userCurrencySymbol = '£ ~';
+      } else {
+        userCurrency = 'USD'; userCurrencySymbol = '$';
+      }
+      updateServicePrice();
+    })
+    .catch(function(){ /* fallback to USD */ });
+
+  function getPiRates() {
+    if (window.piRates && window.piRates.PI) return window.piRates;
+    return null;
+  }
+
+  // Convert USD price to user local currency
+  function localPrice(usdAmount) {
+    var rates = getPiRates();
+    if (!rates || !rates.PI) return null;
+    if (userCurrency === 'USD') return usdAmount.toFixed(2);
+    if (userCurrency === 'EUR') return (usdAmount * rates.EUR).toFixed(2);
+    if (userCurrency === 'CNY') return (usdAmount * rates.CNY).toFixed(2);
+    if (userCurrency === 'NGN') return Math.round(usdAmount * rates.NGN).toLocaleString();
+    if (userCurrency === 'INR') return (usdAmount * rates.INR).toFixed(2);
+    return usdAmount.toFixed(2);
+  }
+
+  // Convert USD price to π Pi amount
+  function usdToPi(usdAmount) {
+    var rates = getPiRates();
+    if (!rates || !rates.PI) return null;
+    return (usdAmount / rates.PI).toFixed(4);
+  }
+
+  window.updateServicePrice = function() {
+    var sel = document.getElementById('booking-service');
+    var box = document.getElementById('service-price-box');
+    var piEl = document.getElementById('spb-pi');
+    var fiatEl = document.getElementById('spb-fiat');
+    var noteEl = document.getElementById('spb-note');
+    if (!sel || !box) return;
+
+    var service = sel.value;
+    if (!service) { box.classList.remove('visible'); return; }
+
+    var usdAmt = SERVICE_PRICES_USD[service] || SERVICE_PRICES_USD['default'];
+    box.classList.add('visible');
+
+    var piAmt = usdToPi(usdAmt);
+    var fiat  = localPrice(usdAmt);
+
+    if (piAmt && fiat) {
+      piEl.textContent = 'π ' + piAmt;
+      if (userCurrency === 'USD') {
+        fiatEl.innerHTML = '<span>$' + fiat + ' USD</span>';
+      } else {
+        fiatEl.innerHTML = '$' + usdAmt.toFixed(2) + ' USD &nbsp;·&nbsp; <span>' + userCurrencySymbol + fiat + ' ' + userCurrency + '</span>';
+      }
+      noteEl.textContent = 'π price updates live · rate via CoinGecko';
+    } else {
+      piEl.textContent = '— π';
+      fiatEl.innerHTML = '<span style="opacity:0.4">Loading rate…</span>';
+      noteEl.textContent = 'Fetching live Pi rate…';
+      setTimeout(window.updateServicePrice, 2000);
+    }
+  };
+
+  // Refresh display every 10s
+  setInterval(function() {
+    var sel = document.getElementById('booking-service');
+    if (sel && sel.value) window.updateServicePrice();
+  }, 10000);
+
+  // Pi payment uses live π amount calculated from USD
   function getPrice(service) {
-    return SERVICE_PRICES[service] || SERVICE_PRICES['default'];
+    var usd = SERVICE_PRICES_USD[service] || SERVICE_PRICES_USD['default'];
+    var pi  = usdToPi(usd);
+    return pi ? parseFloat(pi) : usd; // fallback to USD value if rates not loaded
   }
 
   function getMemo(service) {
@@ -1811,15 +1927,21 @@ document.addEventListener('keydown',function(e){
     btn.classList.add('spinning');
     document.getElementById('pi-rate-badge').textContent = 'Fetching…';
     try {
-      var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd,eur');
+      var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd,eur,cny,ngn,inr');
       var data = await res.json();
       var piUsd = data['pi-network'] && data['pi-network'].usd;
       var piEur = data['pi-network'] && data['pi-network'].eur;
+      var piCny = data['pi-network'] && data['pi-network'].cny;
+      var piNgn = data['pi-network'] && data['pi-network'].ngn;
+      var piInr = data['pi-network'] && data['pi-network'].inr;
       if (!piUsd) throw new Error('no data');
       // Rates stored as: USD value of 1 unit
       piRates.PI  = piUsd;
       piRates.USD = 1;
-      piRates.EUR = piEur / piUsd; // 1 EUR in USD
+      piRates.EUR = piEur / piUsd;
+      piRates.CNY = piCny / piUsd;
+      piRates.NGN = piNgn / piUsd;
+      piRates.INR = piInr / piUsd;
       piLastFetch = now;
       document.getElementById('pi-rate-badge').textContent = '1\u03C0 = $' + piUsd.toFixed(4) + '\n1\u03C0 = \u20AC' + piEur.toFixed(4);
       piConvert();
