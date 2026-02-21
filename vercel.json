@@ -3,6 +3,13 @@
   "outputDirectory": ".",
   "routes": [
     {
+      "src": "/.well-known/pi.json",
+      "dest": "/.well-known/pi.json",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
       "src": "/Terms-of-Service.pdf",
       "dest": "/Terms-of-Service.pdf",
       "headers": {
