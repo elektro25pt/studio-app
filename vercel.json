@@ -1,14 +1,14 @@
 {
-  "src": "/validation-key.txt",
-  "dest": "/validation-key.txt",
-  "headers": {
-    "Content-Type": "text/plain"
-  }
-},
-{
   "version": 2,
   "outputDirectory": ".",
   "routes": [
+    {
+      "src": "/validation-key.txt",
+      "dest": "/validation-key.txt",
+      "headers": {
+        "Content-Type": "text/plain"
+      }
+    },
     {
       "src": "/.well-known/pi.json",
       "dest": "/.well-known/pi.json",
