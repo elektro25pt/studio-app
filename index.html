@@ -200,7 +200,6 @@
     @media (max-width: 768px) {
       nav { padding: 14px 24px; justify-content: center; }
       .hamburger { display: flex; }
-      .nav-right { display: none; }
       .nav-links { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10,10,10,0.98); flex-direction: column; align-items: center; justify-content: center; gap: 32px; z-index: 99; }
       .nav-links.open { display: flex; }
       .nav-links a { font-size: 1.1rem; letter-spacing: 4px; }
@@ -209,7 +208,8 @@
       section { padding: 58px 24px 32px; }
       .form-row { grid-template-columns: 1fr; }
       .service-card { padding: 28px; }
-      .nav-right { gap: 12px; }
+      /* Hide nav-right from fixed nav bar on mobile, show it inside the mobile overlay instead */
+      nav > .nav-right { display: none; }
       .lang-btn .lang-code { display: none; }
     }
   </style>
@@ -432,7 +432,7 @@
   <div class="terms-tab-content active" id="terms-tos">
     <div class="terms-card">
       <p data-i18n="terms.tos.p">Our Terms of Service govern your use of our website and services.<br>By booking or communicating with us, you agree to these terms.</p>
-      <a href="docs/Terms-of-Service.pdf" target="_blank" class="big-link">
+      <a href="docs/Terms-of-Service.pdf" class="big-link" onclick="openPDF(event, 'docs/Terms-of-Service.pdf')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span data-i18n="terms.tos.link">View Terms of Service (PDF) ↗</span>
       </a>
@@ -530,21 +530,23 @@ const T = {
     'home.sub':'Professional Audio &amp; services',
     'home.cta':'Book Service','home.scroll':'Scroll',
     'about.label':'Who We Are','about.title':'About Us',
-    'about.p1':'We are an online studio delivering professional-grade sound for independent artists, bands, producers and labels. Equipped with top-tier hardware and software, experienced engineers and a fully remote workflow, we create punchy, polished tracks optimised for streaming platforms.',
-    'about.p2':'We`ve natively integrated Pi Network payments, allowing you to elevate your music using $PI currency. Join the new digital music economy.',
-    'about.pi':'<strong>$PI</strong> — the future of music payments is here.',
+    'about.p1':'We are an online recording, mixing and mastering studio delivering professional-grade sound for independent artists, bands, producers and labels. Equipped with top-tier hardware and software, experienced engineers and a fully remote workflow, we create punchy, polished tracks optimised for streaming platforms.',
+    'about.p2':'We are the first recording studio to natively integrate Pi Network payments, allowing you to elevate your music using $PI currency. Join the new digital music economy.',
+    'about.pi':'Proud to accept <strong>$PI</strong> — the future of music payments is here.',
     'services.label':'What We Offer','services.title':'Services',
     'services.tab.production':'Production','services.tab.mix':'Mixing','services.tab.mastering':'Mastering','services.tab.rush':'Rush Service',
     'services.production.desc':"Music creation is built on true collaboration. We partner closely with producers, songwriters and artists to dive deep into every track, capturing your distinctive vision while delivering a polished, professional result. Our approach fuses creative insight, extensive experience, and state-of-the-art equipment and software to transform your ideas into standout tracks that truly resonate. Together, we make it unforgettable.",
     'services.production.cta':'Book Now',
-    'services.mix.desc':"We shape every layer of your mix with precision, delivering stunning clarity, rich depth, and authentic emotional resonance. The outcome: songs that move listeners deeply, no matter the platform or device they're played on. Your music is in trusted, passionate hands.",
+    'services.recording.desc':"Every session is a chance to create something truly exceptional. Whether you're a solo artist recording intimate takes or a full band laying down powerful performances, we capture every nuance with exceptional clarity, depth, and genuine authenticity. Your sound deserves to be heard exactly as you intended — and that's exactly what we deliver.",
+    'services.recording.cta':'Book Now',
+    'services.mix.desc':"Our team exists to reveal the true heart of your music. We shape every layer of your mix with precision, delivering stunning clarity, rich depth, and authentic emotional resonance. The outcome: songs that move listeners deeply, no matter the platform or device they're played on. Your music is in trusted, passionate hands.",
     'services.mix.cta':'Book Now',
-    'services.mastering.desc':'Our professional mastering delivers the final polish your tracks deserve: rich, balanced tones, crisp detail, powerful dynamics, and an undeniable vibe — sounding exceptional on streaming platforms, headphones, car speakers, club systems, or anywhere else your music reaches. We optimise loudness, clarity, and emotional impact so your songs translate beautifully across every listening environment.',
+    'services.mastering.desc':'Our mastering delivers the final polish your tracks deserve: rich, balanced tones, crisp detail, powerful dynamics, and an undeniable vibe — sounding exceptional on streaming platforms, headphones, car speakers, club systems, or anywhere else your music reaches. We optimise loudness, clarity, and emotional impact so your songs translate beautifully across every listening environment.',
     'services.mastering.cta':'Book Now',
     'services.rush.desc':'Need your track mixed, mastered, or recorded faster than our standard turnaround? Our Rush Service gives your project top priority, jumping the queue for ultra-fast delivery. More details <span class="rush-link" onclick="openRushModal()">here</span>.',
     'services.rush.cta':'Book Now',
-    'booking.label':'Lock In Your Project','booking.title':'Booking',
-    'booking.intro':"Booking a project with us is simple, fast, and tailored to your creative needs.",
+    'booking.label':'Lock In Your Session','booking.title':'Booking',
+    'booking.intro':"Ready to bring your music to life? Booking a session with us is simple, fast, and tailored to your creative needs. Whether you're tracking vocals in isolation, laying down a full band live session, mixing your latest project, or getting that final master ready for release — we've got the space, gear, and expertise to make it happen.",
     'booking.how.title':'How to Book',
     'booking.how.step1':'Choose your service: Music Production · Mixing · Mastering · Full production packages',
     'booking.how.step2':'Select your preferred dates and times (we offer flexible slots, including evenings and weekends)',
@@ -1085,8 +1087,50 @@ async function detectGeoLang() {
   window.addEventListener('resize',()=>{r();i();}); r();i();d();
 })();
 
-function toggleMobileNav(){document.getElementById('nav-links').classList.toggle('open');}
+function toggleMobileNav(){
+  var nl = document.getElementById('nav-links');
+  nl.classList.toggle('open');
+  if (nl.classList.contains('open') && !document.getElementById('mobile-action-row')) {
+    var nr = document.querySelector('nav > .nav-right');
+    if (nr) {
+      var row = document.createElement('li');
+      row.id = 'mobile-action-row';
+      row.style.cssText = 'list-style:none;display:flex;align-items:center;gap:12px;margin-top:8px;';
+      row.innerHTML = nr.innerHTML;
+      row.querySelectorAll('button[onclick]').forEach(function(el){
+        var orig = el.getAttribute('onclick');
+        el.setAttribute('onclick', orig.replace(/;?$/, '; closeMobileNav();'));
+      });
+      nl.appendChild(row);
+    }
+  }
+}
 function closeMobileNav(){document.getElementById('nav-links').classList.remove('open');}
+
+// Touch/click support for dropdowns (for mobile/touch screens where hover doesn't work)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.dropdown > a').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+        var dropdown = this.closest('.dropdown');
+        var isOpen = dropdown.classList.contains('open');
+        // Close all dropdowns first
+        document.querySelectorAll('.dropdown').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+          e.preventDefault();
+          dropdown.classList.add('open');
+        }
+      }
+    });
+  });
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown').forEach(function(d) { d.classList.remove('open'); });
+    }
+  });
+
+});
 
 function openService(id){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -1113,6 +1157,20 @@ function setService(name){
 function openRushModal(){document.getElementById('rush-modal').classList.add('open');}
 function closeRushModal(){document.getElementById('rush-modal').classList.remove('open');}
 document.getElementById('rush-modal').addEventListener('click',function(e){if(e.target===this)closeRushModal();});
+
+// Cross-browser PDF opener (compatible with Pi Browser, Chrome, Firefox, Safari, etc.)
+function openPDF(e, url) {
+  e.preventDefault();
+  try {
+    var w = window.open(url, '_blank', 'noopener,noreferrer');
+    // If popup was blocked or window.open returned null, fall back to location
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      window.location.href = url;
+    }
+  } catch(err) {
+    window.location.href = url;
+  }
+}
 
 // ═══════════════════════════════════════════
 //  FORM PROTECTION — HONEYPOT + TIME CHECK + RATE LIMITER
@@ -1234,6 +1292,478 @@ document.addEventListener('keydown',function(e){
 </body>
 </html>
 
+<!-- ═══════════════════════════════════════════ -->
+<!--  ELEKTRO — AI CHATBOT WIDGET               -->
+<!-- ═══════════════════════════════════════════ -->
+<style>
+  /* TOGGLE BUTTON */
+  #chat-toggle {
+    position: fixed; bottom: 32px; right: 32px; z-index: 600;
+    width: 48px; height: 48px;
+    background: var(--black); border: 1px solid var(--gold);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 28px rgba(200,169,81,0.3);
+    transition: all 0.3s; padding: 0; overflow: hidden;
+  }
+  #chat-toggle:hover { box-shadow: 0 0 44px rgba(200,169,81,0.55); border-color: var(--gold); }
+  #chat-toggle .ct-logo { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(200,169,81,0.5)); transition: all 0.3s; }
+  #chat-toggle .ct-logo-fallback { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--gold); }
+  #chat-toggle .ct-close { display: none; }
+  #chat-toggle.open .ct-logo, #chat-toggle.open .ct-logo-fallback { display: none; }
+  #chat-toggle.open .ct-close { display: flex; align-items: center; justify-content: center; }
+  #chat-toggle.open .ct-close svg { width: 22px; height: 22px; stroke: var(--gold); }
+
+  /* WINDOW */
+  #chat-window {
+    position: fixed; bottom: auto; top: 72px; right: 32px; z-index: 600;
+    width: 390px; max-height: 580px;
+    background: var(--card); border: 1px solid var(--border);
+    border-top: 2px solid var(--gold);
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transform: translateY(18px) scale(0.98);
+    transform-origin: bottom right;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.75);
+  }
+  #chat-window.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+
+  /* HEADER */
+  .ek-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .ek-avatar {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border: 1px solid rgba(200,169,81,0.4);
+    background: var(--black);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .ek-avatar img { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 0 4px rgba(200,169,81,0.4)); }
+  .ek-avatar-fb { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 1px; color: var(--gold); }
+  .ek-header-info { flex: 1; }
+  .ek-header-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.15rem; letter-spacing: 4px; color: var(--gold); line-height: 1; }
+  .ek-header-status { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--grey); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+  .ek-status-dot { width: 6px; height: 6px; background: #4caf50; border-radius: 50%; animation: e25blink 2s ease-in-out infinite; }
+  @keyframes e25blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* LANG SWITCHER IN HEADER */
+  .ek-lang-btn {
+    background: none; border: 1px solid rgba(200,169,81,0.25);
+    color: var(--grey); font-family: 'Barlow', sans-serif;
+    font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+    padding: 5px 10px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .ek-lang-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* MESSAGES */
+  #chat-messages {
+    flex: 1; overflow-y: auto; padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  #chat-messages::-webkit-scrollbar { width: 3px; }
+  #chat-messages::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .ek-msg { display: flex; gap: 8px; max-width: 92%; }
+  .ek-msg.bot { align-self: flex-start; flex-direction: row; }
+  .ek-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .ek-msg-avatar {
+    width: 28px; height: 28px; flex-shrink: 0; margin-top: 2px;
+    background: var(--black); border: 1px solid rgba(200,169,81,0.3);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .ek-msg-avatar img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 3px rgba(200,169,81,0.4)); }
+  .ek-msg-avatar-fb { font-family: 'Bebas Neue', sans-serif; font-size: 0.65rem; color: var(--gold); }
+  .ek-msg.user .ek-msg-avatar { background: rgba(200,169,81,0.1); border-color: rgba(200,169,81,0.4); }
+  .ek-msg.user .ek-msg-avatar svg { width: 14px; height: 14px; fill: var(--gold); }
+
+  .ek-msg-body { display: flex; flex-direction: column; gap: 3px; }
+  .ek-msg.user .ek-msg-body { align-items: flex-end; }
+
+  .ek-label { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--grey); padding: 0 3px; }
+  .ek-bubble { padding: 10px 13px; font-size: 0.875rem; line-height: 1.65; }
+  .ek-msg.bot .ek-bubble { background: rgba(200,169,81,0.05); border: 1px solid rgba(200,169,81,0.18); color: var(--white); border-radius: 0 8px 8px 8px; }
+  .ek-msg.user .ek-bubble { background: rgba(200,169,81,0.11); border: 1px solid var(--gold); color: var(--white); border-radius: 8px 0 8px 8px; }
+
+  /* QUICK REPLIES */
+  .ek-quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; flex-shrink: 0; }
+  .ek-qbtn {
+    background: none; border: 1px solid rgba(200,169,81,0.28);
+    color: var(--gold); font-family: 'Barlow', sans-serif;
+    font-size: 0.7rem; letter-spacing: 1.5px; padding: 6px 11px;
+    cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  }
+  .ek-qbtn:hover { background: rgba(200,169,81,0.1); border-color: var(--gold); }
+
+  /* TYPING */
+  .ek-typing { display: flex; gap: 4px; padding: 10px 13px; align-items: center; }
+  .ek-typing span { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; animation: e25dots 1.2s ease-in-out infinite; }
+  .ek-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .ek-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes e25dots { 0%,60%,100%{transform:translateY(0);opacity:0.35;} 30%{transform:translateY(-6px);opacity:1;} }
+
+  /* INPUT */
+  .ek-input-row { display: flex; border-top: 1px solid var(--border); padding: 11px 14px; gap: 9px; align-items: flex-end; flex-shrink: 0; }
+  #chat-input {
+    flex: 1; background: transparent; border: 1px solid var(--border);
+    color: var(--white); font-family: 'Barlow', sans-serif;
+    font-size: 0.875rem; padding: 9px 13px; outline: none;
+    resize: none; max-height: 100px; line-height: 1.5;
+    transition: border-color 0.2s;
+    -webkit-user-select: text !important; user-select: text !important;
+  }
+  #chat-input:focus { border-color: var(--gold); }
+  #chat-input::placeholder { color: var(--grey); opacity: 0.55; }
+  #chat-send {
+    background: none; border: 1px solid var(--gold); color: var(--gold);
+    width: 40px; height: 40px; flex-shrink: 0;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  #chat-send:hover { background: var(--gold); color: var(--black); }
+  #chat-send svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #chat-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  @media (max-width: 480px) {
+    #chat-window { width: calc(100vw - 24px); right: 12px; bottom: 88px; }
+    
+  }
+</style>
+
+<!-- TOGGLE BUTTON -->
+<button id="chat-toggle" onclick="toggleChat()" aria-label="ELEKTRIX AI Assistant">
+  <img class="ct-logo" src="data:image/jpeg;base64,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" alt="ELEKTRO"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+  <span class="ct-logo-fallback" style="display:none">E25</span>
+  <span class="ct-close">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+      <path d="M18 6 6 18M6 6l12 12"/>
+    </svg>
+  </span>
+</button>
+
+<!-- CHAT WINDOW -->
+<div id="chat-window">
+  <div class="ek-header">
+    <div class="ek-avatar">
+      <img src="images/logo.png" alt="ELEKTRO"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <span class="ek-avatar-fb" style="display:none">E</span>
+    </div>
+    <div class="ek-header-info">
+      <div class="ek-header-name">ELEKTRIX</div>
+      <div class="ek-header-status">
+        <span class="ek-status-dot"></span>
+        <span id="ek-status-txt">Studio Assistant · Online</span>
+      </div>
+    </div>
+    <button class="ek-lang-btn" onclick="ekCycleLang()" id="ek-lang-btn" title="Change language">🇬🇧 EN</button>
+  </div>
+
+  <div id="chat-messages"></div>
+  <div class="ek-quick" id="chat-quick"></div>
+
+  <div class="ek-input-row">
+    <textarea id="chat-input" rows="1"
+      onkeydown="e25ChatKeydown(event)" oninput="e25AutoResize(this)"></textarea>
+    <button id="chat-send" onclick="e25Send()" aria-label="Send">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── MULTILINGUAL STRINGS ──────────────────────────────
+  const EK_LANGS = {
+    en: {
+      code:'EN', flag:'🇬🇧', dir:'ltr',
+      status:'Studio Assistant · Online',
+      placeholder:'Ask about services, booking, pricing…',
+      you:'You',
+      greeting:"🤖 Hello! I'm ELEKTRIX, your personal AI assistant. How can I help you today?",
+      quick:['Book a session','Services & pricing','Rush Service','Remote mixing/mastering','Pi Network payments','Change language'],
+      quickBook:['Mixing info','Mastering info','Rush Service','Remote services'],
+      quickPrice:['Get a quote','Rush Service info','Book now'],
+      quickPi:['Book a session','Rush Service','Contact us'],
+      quickDefault:['Book a session','Ask something else','Contact us','Change language'],
+      err:"Something went wrong. Please reach us at elektro25pt@gmail.com — always happy to help! 🎚️",
+      sys:`You are ELEKTRO, the AI assistant for Elektro25, a premium recording studio and online audio services brand in Odivelas, Lisbon, Portugal. Always respond in English. Help visitors with bookings, services, pricing, and music production questions.\n\nElektro25 facts:\n- Services: Music Production, Recording, Mixing, Mastering, Rush Service (24-48h priority)\n- Remote/online services available worldwide\n- Accepts Pi Network ($PI) payments — borderless and secure\n- Email: elektro25pt@gmail.com | Social: @elektro25pt\n- Pricing: always custom — never quote fixed prices, invite them to book or email for a quote\n- Rush Service: priority queue, rush fee applies, not always guaranteed if fully booked\n\nTone: professional, warm, music-savvy. Concise (2-4 sentences). Always encourage booking when relevant. Your name is ELEKTRO.`
+    },
+    pt: {
+      code:'PT', flag:'🇵🇹', dir:'ltr',
+      status:'Assistente de Estúdio · Online',
+      placeholder:'Perguntas sobre serviços, marcações, preços…',
+      you:'Tu',
+      greeting:"🤖 Olá! Sou o ELEKTRIX, o teu assistente IA pessoal. Como posso ajudar hoje?",
+      quick:['Marcar sessão','Serviços e preços','Rush Service','Mixing/mastering remoto','Pagamentos Pi Network','Mudar idioma'],
+      quickBook:['Info sobre mixing','Info sobre mastering','Rush Service','Serviços remotos'],
+      quickPrice:['Pedir orçamento','Info Rush Service','Marcar agora'],
+      quickPi:['Marcar sessão','Rush Service','Contacto'],
+      quickDefault:['Marcar sessão','Outra pergunta','Contacto','Mudar idioma'],
+      err:"Algo correu mal. Contacta-nos em elektro25pt@gmail.com — estamos sempre disponíveis! 🎚️",
+      sys:`És o ELEKTRO, o assistente IA do Elektro25, um estúdio de gravação premium e serviços de áudio online em Odivelas, Lisboa, Portugal. Responde sempre em Português. Ajuda os visitantes com marcações, serviços, preços e produção musical.\n\nFactos Elektro25:\n- Serviços: Produção Musical, Gravação, Mixing, Mastering, Rush Service (24-48h)\n- Serviços remotos disponíveis mundialmente\n- Aceita pagamentos Pi Network ($PI) — rápido e seguro\n- Email: elektro25pt@gmail.com | Social: @elektro25pt\n- Preços: sempre personalizados — nunca dês preços fixos, convida a fazer marcação ou contactar por email\n- Rush Service: fila prioritária, taxa extra, disponibilidade não garantida\n\nTom: profissional, caloroso, conhecedor de música. Conciso (2-4 frases). Encoraja sempre marcações. O teu nome é ELEKTRO.`
+    },
+    es: {
+      code:'ES', flag:'🇪🇸', dir:'ltr',
+      status:'Asistente de Estudio · En línea',
+      placeholder:'Preguntas sobre servicios, reservas, precios…',
+      you:'Tú',
+      greeting:"🤖 ¡Hola! Soy ELEKTRIX, tu asistente IA personal. ¿Cómo puedo ayudarte hoy?",
+      quick:['Reservar sesión','Servicios y precios','Rush Service','Mezcla/mastering remoto','Pagos Pi Network','Cambiar idioma'],
+      quickBook:['Info de mezcla','Info de mastering','Rush Service','Servicios remotos'],
+      quickPrice:['Solicitar presupuesto','Info Rush Service','Reservar ahora'],
+      quickPi:['Reservar sesión','Rush Service','Contacto'],
+      quickDefault:['Reservar sesión','Otra pregunta','Contacto','Cambiar idioma'],
+      err:"Algo salió mal. Contáctanos en elektro25pt@gmail.com — ¡siempre felices de ayudar! 🎚️",
+      sys:`Eres ELEKTRO, el asistente IA de Elektro25, un estudio de grabación premium en Odivelas, Lisboa, Portugal. Responde siempre en Español. Ayuda a los visitantes con reservas, servicios, precios y producción musical.\n\nHechos Elektro25:\n- Servicios: Producción Musical, Grabación, Mezcla, Mastering, Rush Service (24-48h)\n- Servicios remotos disponibles mundialmente\n- Acepta pagos Pi Network ($PI)\n- Email: elektro25pt@gmail.com | Social: @elektro25pt\n- Precios: siempre personalizados — nunca des precios fijos\n- Rush Service: cola prioritaria, tarifa extra\n\nTono: profesional, cálido, experto en música. Conciso (2-4 frases). Fomenta siempre las reservas. Tu nombre es ELEKTRO.`
+    },
+    fr: {
+      code:'FR', flag:'🇫🇷', dir:'ltr',
+      status:'Assistant Studio · En ligne',
+      placeholder:'Questions sur les services, réservations, tarifs…',
+      you:'Vous',
+      greeting:"🤖 Bonjour ! Je suis ELEKTRIX, votre assistant IA personnel. Comment puis-je vous aider aujourd'hui ?",
+      quick:['Réserver une session','Services et tarifs','Rush Service','Mix/mastering à distance','Paiements Pi Network','Changer de langue'],
+      quickBook:['Info mixage','Info mastering','Rush Service','Services à distance'],
+      quickPrice:['Demander un devis','Info Rush Service','Réserver maintenant'],
+      quickPi:['Réserver une session','Rush Service','Contact'],
+      quickDefault:['Réserver une session','Autre question','Contact','Changer de langue'],
+      err:"Quelque chose s'est mal passé. Contactez-nous à elektro25pt@gmail.com — toujours heureux d'aider ! 🎚️",
+      sys:`Tu es ELEKTRO, l'assistant IA d'Elektro25, un studio d'enregistrement premium à Odivelas, Lisbonne, Portugal. Réponds toujours en Français. Aide les visiteurs avec les réservations, services, tarifs et production musicale.\n\nFaits Elektro25:\n- Services: Production musicale, Enregistrement, Mixage, Mastering, Rush Service (24-48h)\n- Services à distance disponibles mondialement\n- Accepte les paiements Pi Network ($PI)\n- Email: elektro25pt@gmail.com | Social: @elektro25pt\n- Tarifs: toujours sur mesure — ne jamais donner de prix fixes\n- Rush Service: file prioritaire, frais supplémentaires\n\nTon: professionnel, chaleureux, expert musical. Concis (2-4 phrases). Encourage toujours les réservations. Ton nom est ELEKTRO.`
+    },
+    de: {
+      code:'DE', flag:'🇩🇪', dir:'ltr',
+      status:'Studio-Assistent · Online',
+      placeholder:'Fragen zu Services, Buchungen, Preisen…',
+      you:'Sie',
+      greeting:"🤖 Hallo! Ich bin ELEKTRIX, dein persönlicher KI-Assistent. Wie kann ich dir heute helfen?",
+      quick:['Session buchen','Services & Preise','Rush Service','Remote Mixing/Mastering','Pi Network Zahlungen','Sprache ändern'],
+      quickBook:['Mixing-Info','Mastering-Info','Rush Service','Remote-Services'],
+      quickPrice:['Angebot anfragen','Rush Service Info','Jetzt buchen'],
+      quickPi:['Session buchen','Rush Service','Kontakt'],
+      quickDefault:['Session buchen','Andere Frage','Kontakt','Sprache ändern'],
+      err:"Etwas ist schiefgelaufen. Kontaktiere uns unter elektro25pt@gmail.com — immer gerne behilflich! 🎚️",
+      sys:`Du bist ELEKTRO, der KI-Assistent von Elektro25, einem Premium-Aufnahmestudio in Odivelas, Lissabon, Portugal. Antworte immer auf Deutsch. Hilf Besuchern bei Buchungen, Services, Preisen und Musikproduktion.\n\nElektro25 Fakten:\n- Services: Musikproduktion, Aufnahme, Mixing, Mastering, Rush Service (24-48h)\n- Remote-Services weltweit verfügbar\n- Akzeptiert Pi Network ($PI) Zahlungen\n- Email: elektro25pt@gmail.com | Social: @elektro25pt\n- Preise: immer individuell — nie feste Preise nennen\n- Rush Service: Prioritätswarteschlange, Aufpreis\n\nTon: professionell, herzlich, musikkennerisch. Prägnant (2-4 Sätze). Buchungen immer fördern. Dein Name ist ELEKTRO.`
+    },
+    zh: {
+      code:'ZH', flag:'🇨🇳', dir:'ltr',
+      status:'录音室助手 · 在线',
+      placeholder:'询问服务、预订、价格…',
+      you:'您',
+      greeting:"🤖 您好！我是ELEKTRIX，您的个人AI助手。今天有什么可以帮您？",
+      quick:['预订会话','服务与价格','Rush Service','远程混音/母带','Pi Network支付','切换语言'],
+      quickBook:['混音信息','母带信息','Rush Service','远程服务'],
+      quickPrice:['获取报价','Rush Service信息','立即预订'],
+      quickPi:['预订会话','Rush Service','联系我们'],
+      quickDefault:['预订会话','其他问题','联系我们','切换语言'],
+      err:"出现了问题。请通过 elektro25pt@gmail.com 联系我们——我们很乐意帮助！🎚️",
+      sys:`你是ELEKTRO，Elektro25的AI助手，这是一家位于葡萄牙里斯本Odivelas的高端录音棚和在线音频服务品牌。始终用中文回答。帮助访客解答预订、服务、价格和音乐制作问题。\n\nElektro25信息:\n- 服务：音乐制作、录音、混音、母带处理、Rush Service（24-48小时）\n- 全球远程服务\n- 接受Pi Network ($PI)支付\n- Email: elektro25pt@gmail.com | 社交: @elektro25pt\n- 价格：始终定制——不要报固定价格，邀请他们预订或发邮件询价\n- Rush Service：优先队列，需额外费用\n\n语气：专业、热情、懂音乐。简洁（2-4句话）。始终鼓励预订。你的名字是ELEKTRO。`
+    },
+    vi: {
+      code:'VI', flag:'🇻🇳', dir:'ltr',
+      status:'Trợ lý Studio · Trực tuyến',
+      placeholder:'Hỏi về dịch vụ, đặt lịch, giá cả…',
+      you:'Bạn',
+      greeting:"🤖 Xin chào! Tôi là ELEKTRIX, trợ lý AI cá nhân của bạn. Hôm nay tôi có thể giúp gì cho bạn?",
+      quick:['Đặt phiên','Dịch vụ & giá','Rush Service','Mixing/mastering từ xa','Thanh toán Pi Network','Đổi ngôn ngữ'],
+      quickBook:['Thông tin mixing','Thông tin mastering','Rush Service','Dịch vụ từ xa'],
+      quickPrice:['Nhận báo giá','Thông tin Rush Service','Đặt ngay'],
+      quickPi:['Đặt phiên','Rush Service','Liên hệ'],
+      quickDefault:['Đặt phiên','Câu hỏi khác','Liên hệ','Đổi ngôn ngữ'],
+      err:"Đã xảy ra lỗi. Vui lòng liên hệ elektro25pt@gmail.com — chúng tôi luôn sẵn sàng hỗ trợ! 🎚️",
+      sys:`Bạn là ELEKTRO, trợ lý AI của Elektro25, một studio thu âm cao cấp tại Odivelas, Lisbon, Bồ Đào Nha. Luôn trả lời bằng Tiếng Việt. Giúp khách thăm về đặt lịch, dịch vụ, giá cả và sản xuất âm nhạc.\n\nThông tin Elektro25:\n- Dịch vụ: Sản xuất âm nhạc, Thu âm, Mixing, Mastering, Rush Service (24-48h)\n- Dịch vụ từ xa toàn cầu\n- Chấp nhận thanh toán Pi Network ($PI)\n- Email: elektro25pt@gmail.com | Mạng xã hội: @elektro25pt\n- Giá: luôn tùy chỉnh — không bao giờ báo giá cố định\n- Rush Service: ưu tiên hàng đợi, phí bổ sung\n\nTông giọng: chuyên nghiệp, thân thiện, am hiểu âm nhạc. Ngắn gọn (2-4 câu). Luôn khuyến khích đặt lịch. Tên của bạn là ELEKTRO.`
+    },
+    ar: {
+      code:'AR', flag:'🇸🇦', dir:'rtl',
+      status:'مساعد الاستوديو · متصل',
+      placeholder:'اسأل عن الخدمات، الحجز، الأسعار…',
+      you:'أنت',
+      greeting:"🤖 مرحباً! أنا ELEKTRIX، مساعدك الشخصي الذكي. كيف يمكنني مساعدتك اليوم؟",
+      quick:['حجز جلسة','الخدمات والأسعار','خدمة Rush','الميكس/الماسترينج عن بُعد','مدفوعات Pi Network','تغيير اللغة'],
+      quickBook:['معلومات الميكس','معلومات الماسترينج','خدمة Rush','الخدمات عن بُعد'],
+      quickPrice:['طلب عرض سعر','معلومات Rush Service','احجز الآن'],
+      quickPi:['حجز جلسة','خدمة Rush','تواصل معنا'],
+      quickDefault:['حجز جلسة','سؤال آخر','تواصل معنا','تغيير اللغة'],
+      err:"حدث خطأ ما. يرجى التواصل معنا على elektro25pt@gmail.com — يسعدنا دائماً المساعدة! 🎚️",
+      sys:`أنت ELEKTRO، مساعد الذكاء الاصطناعي لـ Elektro25، استوديو تسجيل متميز في أوديفيلاش، لشبونة، البرتغال. أجب دائماً باللغة العربية. ساعد الزوار في الحجوزات والخدمات والأسعار والإنتاج الموسيقي.\n\nمعلومات Elektro25:\n- الخدمات: الإنتاج الموسيقي، التسجيل، الميكس، الماسترينج، Rush Service (24-48 ساعة)\n- خدمات عن بُعد متاحة عالمياً\n- يقبل مدفوعات Pi Network ($PI)\n- البريد: elektro25pt@gmail.com | @elektro25pt\n- الأسعار: دائماً مخصصة — لا تذكر أسعاراً ثابتة\n- Rush Service: أولوية في الطابور، رسوم إضافية\n\nالأسلوب: احترافي، دافئ، خبير في الموسيقى. موجز (2-4 جمل). شجّع دائماً على الحجز. اسمك ELEKTRO.`
+    }
+  };
+
+  const LANG_ORDER = ['en','pt','es','fr','de','zh','vi','ar'];
+  let ekLang = (typeof currentLang !== 'undefined' && EK_LANGS[currentLang]) ? currentLang : 'en';
+  let hist = [], opened = false, ready = false;
+
+  function L() { return EK_LANGS[ekLang]; }
+
+  // Keep in sync with site language switcher
+  const _origSetLang = window.setLanguage;
+  window.setLanguage = function(lang) {
+    if (_origSetLang) _origSetLang(lang);
+    if (EK_LANGS[lang]) { ekLang = lang; ekApplyLang(); }
+  };
+
+  function ekApplyLang() {
+    const l = L();
+    const btn = document.getElementById('ek-lang-btn');
+    if (btn) btn.textContent = l.flag + ' ' + l.code;
+    const st = document.getElementById('ek-status-txt');
+    if (st) st.textContent = l.status;
+    const inp = document.getElementById('chat-input');
+    if (inp) inp.placeholder = l.placeholder;
+    const win = document.getElementById('chat-window');
+    if (win) win.style.direction = l.dir;
+  }
+
+  // Cycle through languages on button click
+  window.ekCycleLang = function() {
+    const idx = LANG_ORDER.indexOf(ekLang);
+    ekLang = LANG_ORDER[(idx + 1) % LANG_ORDER.length];
+    ekApplyLang();
+    if (ready) {
+      ekQuick(L().quick);
+      ekBot(`🌐 ${L().flag} ${L().code} — ${L().status}`);
+    }
+  };
+
+  window.toggleChat = function() {
+    opened = !opened;
+    document.getElementById('chat-toggle').classList.toggle('open', opened);
+    document.getElementById('chat-window').classList.toggle('open', opened);
+    if (opened && !ready) {
+      ready = true;
+      ekApplyLang();
+      ekBot(L().greeting);
+      ekQuick(L().quick);
+    }
+    if (opened) setTimeout(() => document.getElementById('chat-input').focus(), 320);
+  };
+
+  function ekQuick(opts) {
+    document.getElementById('chat-quick').innerHTML =
+      opts.map(o => `<button class="ek-qbtn" onclick="e25QR(this.textContent.trim())">${o}</button>`).join('');
+  }
+
+  window.e25QR = function(t) {
+    document.getElementById('chat-quick').innerHTML = '';
+    e25Send(t);
+  };
+
+  function ekBot(txt) {
+    const m = document.getElementById('chat-messages');
+    const d = document.createElement('div');
+    d.className = 'ek-msg bot';
+    d.innerHTML = `
+      <div class="ek-msg-avatar">
+        <img src="images/logo.png" alt="ELEKTRO" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="ek-msg-avatar-fb" style="display:none">E</span>
+      </div>
+      <div class="ek-msg-body">
+        <div class="ek-label">ELEKTRIX</div>
+        <div class="ek-bubble">${txt.replace(/\n/g,'<br>')}</div>
+      </div>`;
+    m.appendChild(d); m.scrollTop = m.scrollHeight;
+  }
+
+  function ekUser(txt) {
+    const m = document.getElementById('chat-messages');
+    const d = document.createElement('div');
+    d.className = 'ek-msg user';
+    d.innerHTML = `
+      <div class="ek-msg-avatar">
+        <svg viewBox="0 0 24 24" fill="var(--gold)" style="width:14px;height:14px"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </div>
+      <div class="ek-msg-body">
+        <div class="ek-label">${L().you}</div>
+        <div class="ek-bubble">${txt}</div>
+      </div>`;
+    m.appendChild(d); m.scrollTop = m.scrollHeight;
+  }
+
+  function ekTyping() {
+    const m = document.getElementById('chat-messages');
+    const d = document.createElement('div');
+    d.className = 'ek-msg bot'; d.id = 'e25typ';
+    d.innerHTML = `
+      <div class="ek-msg-avatar">
+        <img src="images/logo.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="ek-msg-avatar-fb" style="display:none">E</span>
+      </div>
+      <div class="ek-msg-body">
+        <div class="ek-label">ELEKTRIX</div>
+        <div class="ek-bubble ek-typing"><span></span><span></span><span></span></div>
+      </div>`;
+    m.appendChild(d); m.scrollTop = m.scrollHeight;
+  }
+
+  window.e25Send = async function(override) {
+    const inp = document.getElementById('chat-input');
+    const txt = (override || inp.value).trim();
+    if (!txt) return;
+    inp.value = ''; e25AutoResize(inp);
+    document.getElementById('chat-send').disabled = true;
+    document.getElementById('chat-quick').innerHTML = '';
+    ekUser(txt);
+    hist.push({role:'user', content: txt});
+    ekTyping();
+    try {
+      const r = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          system: L().sys,
+          messages: hist
+        })
+      });
+      const el = document.getElementById('e25typ'); if(el) el.remove();
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      const reply = data.content?.[0]?.text || L().err;
+      hist.push({role:'assistant', content: reply});
+      ekBot(reply);
+      // Contextual quick replies
+      const low = txt.toLowerCase();
+      if (/book|session|record|marcar|reserv|буки|预订|đặt|حجز/.test(low)) ekQuick(L().quickBook);
+      else if (/price|cost|how much|preço|prix|preis|价格|giá|سعر/.test(low)) ekQuick(L().quickPrice);
+      else if (/pi|payment|pago|payment|pagamento|支付|thanh toán|مدفوع/.test(low)) ekQuick(L().quickPi);
+      else if (/lang|idioma|langue|sprache|语言|ngôn ngữ|لغة|mudar|change|cambiar/.test(low)) { ekCycleLang(); return; }
+      else ekQuick(L().quickDefault);
+    } catch(e) {
+      const el = document.getElementById('e25typ'); if(el) el.remove();
+      ekBot(L().err);
+    }
+    document.getElementById('chat-send').disabled = false;
+    document.getElementById('chat-input').focus();
+  };
+
+  window.e25ChatKeydown = function(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();e25Send();} };
+  window.e25AutoResize = function(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; };
+
+  // Sync nav action button icons from floating buttons & hide floating buttons
+  document.addEventListener('DOMContentLoaded', function() {
+    // Copy ai-bot icon src to nav button
+    var ctLogo = document.querySelector('#chat-toggle .ct-logo');
+    var navChatImg = document.getElementById('nav-chat-img');
+    if (ctLogo && navChatImg) navChatImg.src = ctLogo.src;
+
+    // Copy pi dollar icon src to nav button
+    var piLogo = document.querySelector('#pi-toggle .pi-logo');
+    var navPiImg = document.getElementById('nav-pi-img');
+    if (piLogo && navPiImg) navPiImg.src = piLogo.src;
+
+    // Hide the floating fixed buttons
+    var chatToggle = document.getElementById('chat-toggle');
+    var piToggleBtn = document.getElementById('pi-toggle');
+    if (chatToggle) chatToggle.style.display = 'none';
+    if (piToggleBtn) piToggleBtn.style.display = 'none';
+  });
+
+  // Init lang on load
+  document.addEventListener('DOMContentLoaded', ekApplyLang);
+})();
+</script>
 
 
 <!-- ═══════════════════════════════════════════════
