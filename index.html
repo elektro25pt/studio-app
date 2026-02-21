@@ -40,8 +40,14 @@
     .dropdown-menu a { display: block; padding: 10px 20px; font-size: 0.78rem; letter-spacing: 2px; opacity: 0.8; }
     .dropdown-menu a:hover { background: rgba(200,169,81,0.1); opacity: 1; }
     .dropdown-menu a::after { display: none; }
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; position: absolute; right: 24px; top: 50%; transform: translateY(-50%); }
-    .hamburger span { display: block; width: 26px; height: 2px; background: var(--white); transition: all 0.3s; }
+    .hamburger { display: none; align-items: center; justify-content: center; cursor: pointer; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: 1px solid rgba(200,169,81,0.3); background: rgba(200,169,81,0.05); transition: all 0.3s; z-index: 200; }
+    .hamburger:hover { border-color: var(--gold); background: rgba(200,169,81,0.1); }
+    .hamburger .hb-icon { display: flex; flex-direction: column; gap: 5px; width: 20px; }
+    .hamburger .hb-icon span { display: block; height: 1.5px; background: var(--gold); transition: all 0.35s cubic-bezier(0.23,1,0.32,1); transform-origin: center; }
+    .hamburger.active .hb-icon span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger.active .hb-icon span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .hamburger.active .hb-icon span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .hamburger.active { border-color: var(--gold); background: rgba(200,169,81,0.12); }
 
     
     .nav-right { display: flex; align-items: center; gap: 12px; }
@@ -201,9 +207,33 @@
       nav { padding: 14px 24px; justify-content: center; }
       .hamburger { display: flex; }
       .nav-right { display: none; }
-      .nav-links { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10,10,10,0.98); flex-direction: column; align-items: center; justify-content: center; gap: 32px; z-index: 99; }
-      .nav-links.open { display: flex; }
-      .nav-links a { font-size: 1.1rem; letter-spacing: 4px; }
+      .nav-links {
+        display: flex;
+        position: fixed; top: 0; right: 0; bottom: 0;
+        width: min(320px, 85vw);
+        background: linear-gradient(160deg, #0f0f0f 0%, #111008 100%);
+        border-left: 1px solid rgba(200,169,81,0.2);
+        flex-direction: column; align-items: flex-start; justify-content: center;
+        gap: 0; z-index: 150;
+        padding: 60px 40px;
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.23,1,0.32,1);
+        box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+        pointer-events: none;
+      }
+      .nav-links.open { transform: translateX(0); pointer-events: all; }
+      .nav-links li { width: 100%; border-bottom: 1px solid rgba(200,169,81,0.08); opacity: 0; transform: translateX(20px); transition: opacity 0.3s, transform 0.3s; }
+      .nav-links.open li { opacity: 1; transform: translateX(0); }
+      .nav-links.open li:nth-child(1) { transition-delay: 0.08s; }
+      .nav-links.open li:nth-child(2) { transition-delay: 0.13s; }
+      .nav-links.open li:nth-child(3) { transition-delay: 0.18s; }
+      .nav-links.open li:nth-child(4) { transition-delay: 0.23s; }
+      .nav-links.open li:nth-child(5) { transition-delay: 0.28s; }
+      .nav-links.open li:nth-child(6) { transition-delay: 0.33s; }
+      .nav-links a { font-size: 0.85rem; letter-spacing: 4px; padding: 18px 0; display: block; width: 100%; }
+      /* Dim overlay behind drawer */
+      .nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 149; backdrop-filter: blur(2px); }
+      .nav-overlay.open { display: block; }
       .dropdown-menu { position: static; transform: none; border: none; border-top: 1px solid var(--border); background: transparent; text-align: center; display: none; }
       .dropdown.open .dropdown-menu { display: block; }
       section { padding: 58px 24px 32px; }
@@ -226,9 +256,10 @@
     <img src="images/logo.png" alt="Elektro25" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
     <span style="display:none">ELEKTRO25</span>
   </div>
-  <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
-    <span></span><span></span><span></span>
+  <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu">
+    <div class="hb-icon"><span></span><span></span><span></span></div>
   </button>
+  <div class="nav-overlay" id="nav-overlay" onclick="closeMobileNav()"></div>
   <ul class="nav-links" id="nav-links">
     <li><a href="#home" onclick="closeMobileNav()" data-i18n="nav.home">Home</a></li>
     <li><a href="#about" onclick="closeMobileNav()" data-i18n="nav.about">About Us</a></li>
@@ -1057,8 +1088,16 @@ applyTranslations('en');
   window.addEventListener('resize',()=>{r();i();}); r();i();d();
 })();
 
-function toggleMobileNav(){document.getElementById('nav-links').classList.toggle('open');}
-function closeMobileNav(){document.getElementById('nav-links').classList.remove('open');}
+function toggleMobileNav(){
+  document.getElementById('nav-links').classList.toggle('open');
+  document.getElementById('hamburger-btn').classList.toggle('active');
+  document.getElementById('nav-overlay').classList.toggle('open');
+}
+function closeMobileNav(){
+  document.getElementById('nav-links').classList.remove('open');
+  document.getElementById('hamburger-btn').classList.remove('active');
+  document.getElementById('nav-overlay').classList.remove('open');
+}
 
 function openService(id){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
