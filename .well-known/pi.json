@@ -11,4 +11,4 @@ Substitui `djmlj` pelo teu username Pi real (sem o @)
 
 O Vercel faz deploy automático em segundos. Depois confirma que está acessível abrindo no browser:
 ```
-https://elektro25.com/.well-known/pi.json
+https://www.elektro25.com/.well-known/pi.json
