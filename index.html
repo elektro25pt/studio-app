@@ -205,7 +205,6 @@
     @media (max-width: 768px) {
       nav { padding: 14px 24px; justify-content: center; }
       .hamburger { display: flex; }
-      .nav-right { display: none; }
       .nav-links { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10,10,10,0.98); flex-direction: column; align-items: center; justify-content: center; gap: 32px; z-index: 99; }
       .nav-links.open { display: flex; }
       .nav-links a { font-size: 1.1rem; letter-spacing: 4px; }
@@ -214,7 +213,8 @@
       section { padding: 58px 24px 32px; }
       .form-row { grid-template-columns: 1fr; }
       .service-card { padding: 28px; }
-      .nav-right { gap: 12px; }
+      /* Hide nav-right from fixed nav bar on mobile, show it inside the mobile overlay instead */
+      nav > .nav-right { display: none; }
       .lang-btn .lang-code { display: none; }
     }
   </style>
@@ -452,7 +452,7 @@
   <div class="terms-tab-content active" id="terms-tos">
     <div class="terms-card">
       <p data-i18n="terms.tos.p">Our Terms of Service govern your use of our website and services.<br>By booking or communicating with us, you agree to these terms.</p>
-      <a href="docs/Terms-of-Service.pdf" target="_blank" class="big-link">
+      <a href="docs/Terms-of-Service.pdf" class="big-link" onclick="openPDF(event, 'docs/Terms-of-Service.pdf')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span data-i18n="terms.tos.link">View Terms of Service (PDF) ↗</span>
       </a>
@@ -550,8 +550,8 @@ const T = {
     'home.sub':'Professional recording, mixing &amp; mastering services',
     'home.cta':'Book Service','home.scroll':'Scroll',
     'about.label':'Who We Are','about.title':'About Us',
-    'about.p1':'We are an online recording, mixing and mastering studio delivering professional-grade sound for independent artists, bands, producers and labels. Equipped with top-tier hardware and software, experienced engineers and a fully remote workflow, we create punchy, polished tracks optimised for streaming platforms.',
-    'about.p2':'We are the first recording studio to natively integrate Pi Network payments, allowing you to elevate your music using $PI currency. Join the new digital music economy.',
+    'about.p1':'We are an online studio delivering professional-grade sound for independent artists, bands, producers and labels. Equipped with top-tier hardware and software, experienced engineers and a fully remote workflow, we create punchy, polished tracks optimised for streaming platforms.',
+    'about.p2':'We are the first studio to natively integrate Pi Network payments, allowing you to elevate your music using $PI currency. Join the new digital music economy.',
     'about.pi':'Proud to accept <strong>$PI</strong> — the future of music payments is here.',
     'services.label':'What We Offer','services.title':'Services',
     'services.tab.production':'Production','services.tab.recording':'Recording','services.tab.mix':'Mixing','services.tab.mastering':'Mastering','services.tab.rush':'Rush Service',
@@ -559,14 +559,14 @@ const T = {
     'services.production.cta':'Book Now',
     'services.recording.desc':"Every session is a chance to create something truly exceptional. Whether you're a solo artist recording intimate takes or a full band laying down powerful performances, we capture every nuance with exceptional clarity, depth, and genuine authenticity. Your sound deserves to be heard exactly as you intended — and that's exactly what we deliver.",
     'services.recording.cta':'Book Now',
-    'services.mix.desc':"Our team exists to reveal the true heart of your music. We shape every layer of your mix with precision, delivering stunning clarity, rich depth, and authentic emotional resonance. The outcome: songs that move listeners deeply, no matter the platform or device they're played on. Your music is in trusted, passionate hands.",
+    'services.mix.desc':"We shape every layer of your mix with precision, delivering stunning clarity, rich depth, and authentic emotional resonance. The outcome: songs that move listeners deeply, no matter the platform or device they're played on. Your music is in trusted, passionate hands.",
     'services.mix.cta':'Book Now',
-    'services.mastering.desc':'Our professional mastering delivers the final polish your tracks deserve: rich, balanced tones, crisp detail, powerful dynamics, and an undeniable vibe — sounding exceptional on streaming platforms, headphones, car speakers, club systems, or anywhere else your music reaches. We optimise loudness, clarity, and emotional impact so your songs translate beautifully across every listening environment.',
+    'services.mastering.desc':'Our mastering delivers the final polish your tracks deserve: rich, balanced tones, crisp detail, powerful dynamics, and an undeniable vibe — sounding exceptional on streaming platforms, headphones, car speakers, club systems, or anywhere else your music reaches. We optimise loudness, clarity, and emotional impact so your songs translate beautifully across every listening environment.',
     'services.mastering.cta':'Book Now',
     'services.rush.desc':'Need your track mixed, mastered, or recorded faster than our standard turnaround? Our Rush Service gives your project top priority, jumping the queue for ultra-fast delivery. More details <span class="rush-link" onclick="openRushModal()">here</span>.',
     'services.rush.cta':'Book Now',
     'booking.label':'Lock In Your Session','booking.title':'Booking',
-    'booking.intro':"Ready to bring your music to life? Booking a session with us is simple, fast, and tailored to your creative needs. Whether you're tracking vocals in isolation, laying down a full band live session, mixing your latest project, or getting that final master ready for release — we've got the space, gear, and expertise to make it happen.",
+    'booking.intro':"Ready to bring your music to life? Booking a project with us is simple, fast, and tailored to your creative needs.",
     'booking.how.title':'How to Book',
     'booking.how.step1':'Choose your service: Recording · Mixing · Mastering · Full production packages',
     'booking.how.step2':'Select your preferred dates and times (we offer flexible slots, including evenings and weekends)',
@@ -1121,8 +1121,50 @@ async function detectGeoLang() {
   window.addEventListener('resize',()=>{r();i();}); r();i();d();
 })();
 
-function toggleMobileNav(){document.getElementById('nav-links').classList.toggle('open');}
+function toggleMobileNav(){
+  var nl = document.getElementById('nav-links');
+  nl.classList.toggle('open');
+  if (nl.classList.contains('open') && !document.getElementById('mobile-action-row')) {
+    var nr = document.querySelector('nav > .nav-right');
+    if (nr) {
+      var row = document.createElement('li');
+      row.id = 'mobile-action-row';
+      row.style.cssText = 'list-style:none;display:flex;align-items:center;gap:12px;margin-top:8px;';
+      row.innerHTML = nr.innerHTML;
+      row.querySelectorAll('button[onclick]').forEach(function(el){
+        var orig = el.getAttribute('onclick');
+        el.setAttribute('onclick', orig.replace(/;?$/, '; closeMobileNav();'));
+      });
+      nl.appendChild(row);
+    }
+  }
+}
 function closeMobileNav(){document.getElementById('nav-links').classList.remove('open');}
+
+// Touch/click support for dropdowns (for mobile/touch screens where hover doesn't work)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.dropdown > a').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+        var dropdown = this.closest('.dropdown');
+        var isOpen = dropdown.classList.contains('open');
+        // Close all dropdowns first
+        document.querySelectorAll('.dropdown').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+          e.preventDefault();
+          dropdown.classList.add('open');
+        }
+      }
+    });
+  });
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown').forEach(function(d) { d.classList.remove('open'); });
+    }
+  });
+
+});
 
 function openService(id){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -1149,6 +1191,20 @@ function setService(name){
 function openRushModal(){document.getElementById('rush-modal').classList.add('open');}
 function closeRushModal(){document.getElementById('rush-modal').classList.remove('open');}
 document.getElementById('rush-modal').addEventListener('click',function(e){if(e.target===this)closeRushModal();});
+
+// Cross-browser PDF opener (compatible with Pi Browser, Chrome, Firefox, Safari, etc.)
+function openPDF(e, url) {
+  e.preventDefault();
+  try {
+    var w = window.open(url, '_blank', 'noopener,noreferrer');
+    // If popup was blocked or window.open returned null, fall back to location
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      window.location.href = url;
+    }
+  } catch(err) {
+    window.location.href = url;
+  }
+}
 
 // ═══════════════════════════════════════════
 //  FORM PROTECTION — HONEYPOT + TIME CHECK + RATE LIMITER
@@ -1730,6 +1786,7 @@ document.addEventListener('keydown',function(e){
     var piLogo = document.querySelector('#pi-toggle .pi-logo');
     var navPiImg = document.getElementById('nav-pi-img');
     if (piLogo && navPiImg) navPiImg.src = piLogo.src;
+
 
     // Hide the floating fixed buttons
     var chatToggle = document.getElementById('chat-toggle');
