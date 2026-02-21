@@ -2,6 +2,6 @@
   "version": 2,
   "outputDirectory": ".",
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js)$).*", "dest": "/index.html" }
   ]
 }
