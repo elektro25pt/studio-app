@@ -2,6 +2,17 @@
   "version": 2,
   "outputDirectory": ".",
   "routes": [
-    { "src": "/(?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js)$).*", "dest": "/index.html" }
+    {
+      "src": "/Terms-of-Service.pdf",
+      "dest": "/Terms-of-Service.pdf",
+      "headers": {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": "attachment; filename=\"Terms-of-Service.pdf\""
+      }
+    },
+    {
+      "src": "/(?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js|pdf)$).*",
+      "dest": "/index.html"
+    }
   ]
 }
