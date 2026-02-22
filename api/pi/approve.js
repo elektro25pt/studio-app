@@ -1,6 +1,3 @@
-// Aprovação de pagamento Pi — chamado pelo frontend
-// quando o utilizador aprova no Pi Browser
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
